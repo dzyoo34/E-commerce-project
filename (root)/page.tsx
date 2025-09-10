@@ -1,25 +1,35 @@
-"use client";
+import prismadb from "@/lib/prismadb";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import Navbar from "@/components/navbar";
 
-import { Modal } from "@/components/ui/modal";
-import { useStoreModal } from "@/hooks/use-store-modal";
-import { useEffect } from "react";
+export default async function DashboardLayout ({
+    children,
+    params
+}: {
+    children: React.ReactNode;
+    params: { storeId: string }
+}) {
+    const { userId } = await auth();
 
+    if (!userId) {
+        redirect('/sign-in');
+    }
+    const store = await prismadb.store.findFirst({
+        where: {
+            id: params.storeId,
+            userId
+        }
+    });
 
-const SetupPage = () => {
-  const onOpen = useStoreModal((state) => state.onOpen);
-  const isOpen = useStoreModal((state) => state.isOpen);
-
- useEffect(() => {
-if (!isOpen) {
-  onOpen();
+    if (!store) {
+        redirect('/');
 }
- }, [isOpen, onOpen]);
-  return (
-    <div className="p-4">
-       Root Page
-    </div>
-  );
-}
-export default SetupPage;
 
-
+    return (
+        <>
+        <Navbar />
+        {children}
+        </>
+    );
+};
